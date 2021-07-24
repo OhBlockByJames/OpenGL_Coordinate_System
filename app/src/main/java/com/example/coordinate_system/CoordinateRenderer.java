@@ -101,7 +101,7 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
     };
 
 
-    //定义XYZ坐标和显示的字
+    //xyz coordinate
     float xyzVertices[] = new float[]{
             -0.6f, 0f, 0f,//0 x axis start
             0.6f, 0f, 0f,//1 x axis end
@@ -291,7 +291,8 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
 
     private void updateAngle() {
         if (!mIsPressed) {
-            rotateM(modelMatrix, 0, (float) 1.0, 0f, 1f, 0f);
+
+            rotateM(modelMatrix, 0, (float) 1.0, 0f, 0.5f, 0f);
             multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0,
                     viewMatrix, 0);
             multiplyMM(mMVPMatrix, 0, viewProjectionMatrix,
@@ -333,11 +334,11 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
         glUniformMatrix4fv(uMatrixLocation, 1, false, mMVPMatrix, 0);
         // Draw the table.
         //glDrawArrays(GL_TRIANGLE_STRIP, 0, 10);
-        glLineWidth(3.0f);//直线宽度
-        glVertexPointer(3, GL10.GL_FLOAT, 0, xyzVertexData);//设置XYZ的顶点
+        glLineWidth(6.0f);//3.0f
+        glVertexPointer(3, GL10.GL_FLOAT, 0, xyzVertexData);//xyz vertex
 
         // vertex color
-        //glColor4f(0.0f, 1.0f, 0.0f, 1.0f);//设置绘笔颜色
+        //glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
         glDrawElements(GL10.GL_LINES, XFacetsBuffer.remaining(),
                 GL10.GL_UNSIGNED_BYTE, XFacetsBuffer);//X
 
