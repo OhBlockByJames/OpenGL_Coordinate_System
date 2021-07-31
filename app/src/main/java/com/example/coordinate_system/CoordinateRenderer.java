@@ -1,5 +1,7 @@
 package com.example.coordinate_system;
 
+import android.opengl.GLES10;
+import android.opengl.GLES11;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
@@ -13,9 +15,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
 import static android.opengl.GLES10.glColor4f;
+import static android.opengl.GLES10.glPointSize;
 import static android.opengl.GLES10.glVertexPointer;
 import static android.opengl.GLES20.GL_ARRAY_BUFFER;
 import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
@@ -23,6 +27,7 @@ import static android.opengl.GLES20.GL_COMPILE_STATUS;
 import static android.opengl.GLES20.GL_FLOAT;
 import static android.opengl.GLES20.GL_FRAGMENT_SHADER;
 import static android.opengl.GLES20.GL_LINK_STATUS;
+import static android.opengl.GLES20.GL_POINTS;
 import static android.opengl.GLES20.GL_STATIC_DRAW;
 import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
 import static android.opengl.GLES20.GL_VERTEX_SHADER;
@@ -59,6 +64,7 @@ import static android.opengl.Matrix.multiplyMV;
 import static android.opengl.Matrix.rotateM;
 import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.setLookAtM;
+import static javax.microedition.khronos.opengles.GL10.*;
 
 public class CoordinateRenderer implements GLSurfaceView.Renderer {
 
@@ -69,6 +75,12 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
     private final FloatBuffer  xyzVertexData;
     private final FloatBuffer mColorData;
     private int mShaderProgram;
+
+    //add for dots
+    private final ByteBuffer DotsBuffer;
+    private final FloatBuffer  dotsVertexData;
+    private final FloatBuffer mDotsData;
+
 
     private int aColorLocation;
     private int aPositionLocation;
@@ -98,6 +110,27 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
             0.5f, 0.5f, 0.5f,
             0.5f, 0.5f, 0.5f,
             0.5f, 0.5f, 0.5f
+    };
+
+    private float[] myColorPoints = {
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+            0.94f, 0.42f, 0.30f,
+    };
+
+    //add for dots
+    float xyzDots[] = new float[]{
+            0.15f,0f,0f,
+    };
+    private float[] mDotsColorPoints = {
+            1.0f, 1.0f, 1.0f,
     };
 
 
@@ -152,6 +185,10 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
 
 
 
+    };
+
+    byte[] Dots = new byte[]{
+            0
     };
 
     //X axis and arrow
@@ -225,10 +262,12 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
 
     CoordinateRenderer() {
         mColorData = ByteBuffer
-                .allocateDirect(mColorPoints.length * BYTES_PER_FLOAT)
+                //.allocateDirect(mColorPoints.length * BYTES_PER_FLOAT)
+                .allocateDirect(myColorPoints.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        mColorData.put(mColorPoints);
+        //mColorData.put(mColorPoints);
+        mColorData.put(myColorPoints);
 
         xyzVertexData = ByteBuffer
                 .allocateDirect(xyzVertices.length * BYTES_PER_FLOAT)
@@ -240,6 +279,22 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
         XFacetsBuffer = ByteBuffer.wrap(XFacets);
         YFacetsBuffer = ByteBuffer.wrap(YFacets);
         ZFacetsBuffer = ByteBuffer.wrap(ZFacets);
+
+        //dots renderer
+        mDotsData = ByteBuffer
+                //.allocateDirect(mColorPoints.length * BYTES_PER_FLOAT)
+                .allocateDirect(mDotsColorPoints.length * BYTES_PER_FLOAT)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        mDotsData.put(mDotsColorPoints);
+
+        dotsVertexData = ByteBuffer
+                .allocateDirect(xyzDots.length * BYTES_PER_FLOAT)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        dotsVertexData.put(xyzDots);
+        //從這裡接下去寫 目前已放入bytebuffer
+        DotsBuffer = ByteBuffer.wrap(Dots);
     }
 
 
@@ -260,6 +315,9 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
         uMatrixLocation = glGetUniformLocation(mShaderProgram, "u_Matrix");
 
         xyzVertexData.position(0);
+
+        //add
+       // dotsVertexData.position(0);
 
         initVBO();
         glBindBuffer(GL_ARRAY_BUFFER, mVboBufferId);
@@ -338,17 +396,30 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
         glVertexPointer(3, GL10.GL_FLOAT, 0, xyzVertexData);//xyz vertex
 
         // vertex color
-        //glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
-        glDrawElements(GL10.GL_LINES, XFacetsBuffer.remaining(),
-                GL10.GL_UNSIGNED_BYTE, XFacetsBuffer);//X
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glDrawElements(GL_LINES, XFacetsBuffer.remaining(),
+                GL_UNSIGNED_BYTE, XFacetsBuffer);//X
 
-        //glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
-        glDrawElements(GL10.GL_LINES, YFacetsBuffer.remaining(),
-                GL10.GL_UNSIGNED_BYTE, YFacetsBuffer);//Y
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glDrawElements(GL_LINES, YFacetsBuffer.remaining(),
+                GL_UNSIGNED_BYTE, YFacetsBuffer);//Y
 
-        //glColor4f(1.0f, 0.0f, 1.0f, 1.0f);
-        glDrawElements(GL10.GL_LINES, ZFacetsBuffer.remaining(),
-                GL10.GL_UNSIGNED_BYTE, ZFacetsBuffer);//Z
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glDrawElements(GL_LINES, ZFacetsBuffer.remaining(),
+                GL_UNSIGNED_BYTE, ZFacetsBuffer);//Z
+
+        //0725畫點測試
+        //設定點的大小
+        //glPointSize(6.0f);
+        //指定頂點指標
+        //GLES10.glVertexPointer(3, GL10.GL_FLOAT, 0,dotsVertexData);
+        //畫陣列
+//        GLES10.glDrawArrays(GL10.GL_POINTS, 0, 1);
+//        glPointSize(5.0f);
+//        glBegin(GL_POINTS);
+//        glVertex3f(1.0f, 1.0f, 1.0f);
+//        glEnd();
+
 
 
 
@@ -520,6 +591,10 @@ public class CoordinateRenderer implements GLSurfaceView.Renderer {
         // We let the native buffer go out of scope, but it won't be released
         // until the next time the garbage collector is run.
     }
+
+
+
+
 
 
 }

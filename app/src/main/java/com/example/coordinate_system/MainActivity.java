@@ -19,6 +19,8 @@ public class MainActivity extends Activity {
     private GLSurfaceView glSurfaceView;
     private boolean rendererSet = false;
 
+
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void onCreate(Bundle savedInstanceState) {
